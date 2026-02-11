@@ -1,0 +1,54 @@
+name: Auto Tag
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skip if already tagged
+        id: skip
+        run: |
+          if git tag --points-at HEAD | grep -q '^v'; then
+            echo "already_tagged=true" >> $GITHUB_OUTPUT
+          else
+            echo "already_tagged=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Compute next tag
+        if: steps.skip.outputs.already_tagged != 'true'
+        id: vars
+        run: |
+          git fetch --tags --force
+          latest=$(git tag -l "v*" --sort=-v:refname | head -n 1)
+          if [ -z "$latest" ]; then
+            latest="v0.0.0"
+          fi
+
+          ver=${latest#v}
+          IFS=. read -r major minor patch <<EOF
+$ver
+EOF
+          patch=$((patch+1))
+          next="v${major}.${minor}.${patch}"
+
+          echo "latest=$latest" >> $GITHUB_OUTPUT
+          echo "next=$next" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        if: steps.skip.outputs.already_tagged != 'true'
+        run: |
+          git tag "${{ steps.vars.outputs.next }}"
+          git push origin "${{ steps.vars.outputs.next }}"
