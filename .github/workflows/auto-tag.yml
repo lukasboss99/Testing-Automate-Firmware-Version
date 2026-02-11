@@ -38,9 +38,10 @@ jobs:
           fi
 
           ver=${latest#v}
-          IFS=. read -r major minor patch <<EOF
-$ver
-EOF
+          major=${ver%%.*}
+          rest=${ver#*.}
+          minor=${rest%%.*}
+          patch=${rest#*.}
           patch=$((patch+1))
           next="v${major}.${minor}.${patch}"
 
