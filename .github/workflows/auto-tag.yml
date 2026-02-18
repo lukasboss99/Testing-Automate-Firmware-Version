@@ -1,4 +1,4 @@
-name: Auto Tag
+name: Auto Tag from VERSION file
 
 on:
   push:
@@ -18,38 +18,33 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Skip if already tagged
-        id: skip
+      - name: Read VERSION file
+        id: version
         run: |
-          if git tag --points-at HEAD | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "already_tagged=true" >> $GITHUB_OUTPUT
+          if [ ! -f VERSION ]; then
+            echo "VERSION file not found"
+            exit 1
+          fi
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current VERSION file: $VERSION"
+
+      - name: Check if tag already exists
+        id: check
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if git tag -l | grep -qx "$VERSION"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag $VERSION already exists — skipping"
           else
-            echo "already_tagged=false" >> $GITHUB_OUTPUT
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $VERSION does not exist — will create"
           fi
 
-      - name: Compute next tag
-        if: steps.skip.outputs.already_tagged != 'true'
-        id: vars
+      - name: Create and push tag
+        if: steps.check.outputs.exists != 'true'
         run: |
-          git fetch --tags --force
-          latest=$(git tag -l "[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
-          if [ -z "$latest" ]; then
-            latest="0.0.0"
-          fi
-
-          ver=${latest}
-          major=${ver%%.*}
-          rest=${ver#*.}
-          minor=${rest%%.*}
-          patch=${rest#*.}
-          patch=$((patch+1))
-          next="${major}.${minor}.${patch}"
-
-          echo "latest=$latest" >> $GITHUB_OUTPUT
-          echo "next=$next" >> $GITHUB_OUTPUT
-
-      - name: Create tag
-        if: steps.skip.outputs.already_tagged != 'true'
-        run: |
-          git tag "${{ steps.vars.outputs.next }}"
-          git push origin "${{ steps.vars.outputs.next }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          git tag "$VERSION"
+          git push origin "$VERSION"
+          echo "Created and pushed tag: $VERSION"

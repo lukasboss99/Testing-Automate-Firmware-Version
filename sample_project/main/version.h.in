@@ -1,6 +1,12 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define GIT_VERSION "@GIT_VERSION@"
+// Full version string including git hash, e.g. "1.2.3-a1b2c3d"
+#define GIT_VERSION     "@GIT_VERSION@"
+
+// Individual version components for programmatic use
+#define VERSION_MAJOR   @VERSION_MAJOR@
+#define VERSION_MINOR   @VERSION_MINOR@
+#define VERSION_PATCH   @VERSION_PATCH@
 
 #endif //VERSION_H
