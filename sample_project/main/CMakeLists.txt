@@ -1,5 +1,6 @@
 idf_component_register(SRCS "main.c"
-                    INCLUDE_DIRS ".")
+                    INCLUDE_DIRS "."
+                    "../build")
 
                     find_package(Git)
 if(GIT_FOUND)
