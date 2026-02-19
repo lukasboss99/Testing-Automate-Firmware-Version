@@ -1,6 +1,6 @@
 ﻿function Test-GitInstalled {
-    winget list --id Git.Git -e> $null 2>&1
-    return ($LASTEXITCODE -eq 0)
+    $result = winget list --id Git.Git -e --accept-source-agreements 2>$null
+    return ($result -match "Git")
 }
 
 if (-not (Test-GitInstalled)) {
