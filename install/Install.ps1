@@ -1,5 +1,5 @@
 ﻿function Test-GitInstalled {
-    winget list --id Git.Git -e > $null 2>&1
+    winget list --id Git.Git -e> $null 2>&1
     return ($LASTEXITCODE -eq 0)
 }
 
