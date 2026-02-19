@@ -12,6 +12,7 @@ Copy the following files/folders from this repository into the **root directory*
 |---|---|
 | `VERSION` | Stores the current version (`MAJOR.MINOR.PATCH`) |
 | `.githooks/` | Contains the pre-commit hook for auto-increment |
+| `.gitattributes` | Forces LF line endings for hook/shell files on all OS |
 | `scripts/` | Helper scripts to manually bump major/minor version |
 
 ## Step 2 — Set the initial version
@@ -29,6 +30,13 @@ Run this command **once** inside the destination repository:
 ```bash
 cd /path/to/your/project
 git config core.hooksPath .githooks
+```
+
+Windows PowerShell example:
+
+```powershell
+cd C:\path\to\your\project
+git config --local core.hooksPath .githooks
 ```
 
 > **Important:** Every developer who clones the repository must run this command once. Consider adding it to your README.
@@ -127,6 +135,22 @@ After a manual bump, commit with `--no-verify` to prevent double-incrementing:
 git add VERSION
 git commit --no-verify -m "Bump version to X.Y.0"
 ```
+
+### GitHub Desktop (Windows) troubleshooting
+
+If you see `cannot spawn .githooks/pre-commit: No such file or directory`, check the following:
+
+1. Pull latest changes (must include `.gitattributes` and `.githooks/pre-commit`)
+2. Re-run: `git config --local core.hooksPath .githooks`
+3. Verify config: `git config --show-origin --get core.hooksPath`
+4. Ensure hooks file exists: `.githooks/pre-commit`
+5. Re-checkout hook with normalized line endings:
+
+```powershell
+git checkout -- .githooks/pre-commit
+```
+
+Then create a small test commit again.
 
 ### Using the version in code
 
