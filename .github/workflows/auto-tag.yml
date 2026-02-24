@@ -17,16 +17,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read VERSION file
+      - name: Read and resolve VERSION
         id: version
         run: |
           if [ ! -f VERSION ]; then
             echo "VERSION file not found"
             exit 1
           fi
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Current VERSION file: $VERSION"
+          FILE_VERSION=$(cat VERSION | tr -d '[:space:]')
+          if ! echo "$FILE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Invalid VERSION format: $FILE_VERSION"
+            exit 1
+          fi
+
+          LATEST_TAG=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          if [ -n "$LATEST_TAG" ]; then
+            WINNING_VERSION=$(printf "%s\n%s\n" "$FILE_VERSION" "$LATEST_TAG" | sort -V | tail -n1)
+          else
+            WINNING_VERSION="$FILE_VERSION"
+          fi
+
+          echo "file_version=$FILE_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$WINNING_VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION file: $FILE_VERSION"
+          if [ "$WINNING_VERSION" != "$FILE_VERSION" ]; then
+            echo "Using higher existing version: $WINNING_VERSION (latest tag)"
+          fi
 
       - name: Check if tag already exists
         id: check
