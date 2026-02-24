@@ -30,18 +30,36 @@ jobs:
             exit 1
           fi
 
-          LATEST_TAG=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
-          if [ -n "$LATEST_TAG" ]; then
-            WINNING_VERSION=$(printf "%s\n%s\n" "$FILE_VERSION" "$LATEST_TAG" | sort -V | tail -n1)
-          else
-            WINNING_VERSION="$FILE_VERSION"
+          PREV_VERSION=""
+          if [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            PREV_CANDIDATE=$(git show "${{ github.event.before }}:VERSION" 2>/dev/null | tr -d '[:space:]')
+            if echo "$PREV_CANDIDATE" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              PREV_VERSION="$PREV_CANDIDATE"
+            fi
           fi
 
+          LATEST_TAG=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          CANDIDATES="$FILE_VERSION"
+          if [ -n "$PREV_VERSION" ]; then
+            CANDIDATES=$(printf "%s\n%s\n" "$CANDIDATES" "$PREV_VERSION")
+          fi
+          if [ -n "$LATEST_TAG" ]; then
+            CANDIDATES=$(printf "%s\n%s\n" "$CANDIDATES" "$LATEST_TAG")
+          fi
+          WINNING_VERSION=$(printf "%s\n" "$CANDIDATES" | sort -V | tail -n1)
+
+          echo "prev_version=$PREV_VERSION" >> $GITHUB_OUTPUT
           echo "file_version=$FILE_VERSION" >> $GITHUB_OUTPUT
           echo "version=$WINNING_VERSION" >> $GITHUB_OUTPUT
           echo "VERSION file: $FILE_VERSION"
+          if [ -n "$PREV_VERSION" ]; then
+            echo "Previous branch VERSION: $PREV_VERSION"
+          fi
+          if [ -n "$LATEST_TAG" ]; then
+            echo "Latest tag VERSION: $LATEST_TAG"
+          fi
           if [ "$WINNING_VERSION" != "$FILE_VERSION" ]; then
-            echo "Using higher existing version: $WINNING_VERSION (latest tag)"
+            echo "Using higher existing version: $WINNING_VERSION"
           fi
 
       - name: Fail on downgraded VERSION

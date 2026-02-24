@@ -49,7 +49,7 @@ if [ ! -f "$VERSION_FILE" ]; then
 fi
 
 # Check if there are actual staged changes (excluding VERSION itself)
-STAGED_CHANGES=$(git diff --cached --name-only | grep -v "^VERSION$")
+STAGED_CHANGES=$(git diff --cached --name-only)
 if [ -z "$STAGED_CHANGES" ]; then
     # Only VERSION is staged or nothing is staged — don't increment
     exit 0

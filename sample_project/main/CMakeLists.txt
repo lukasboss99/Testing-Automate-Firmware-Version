@@ -42,6 +42,18 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+# Get current git branch name
+execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if("${GIT_BRANCH}" STREQUAL "")
+    set(GIT_BRANCH "unknown")
+endif()
+
 # Check for uncommitted changes (dirty flag)
 execute_process(
     COMMAND ${GIT_EXECUTABLE} diff --quiet
@@ -50,9 +62,9 @@ execute_process(
 )
 
 if(GIT_DIRTY)
-    set(GIT_VERSION "${PROJECT_VERSION_STR}-${GIT_HASH}+dirty")
+    set(GIT_VERSION "${PROJECT_VERSION_STR}-${GIT_BRANCH}-${GIT_HASH}+dirty")
 else()
-    set(GIT_VERSION "${PROJECT_VERSION_STR}-${GIT_HASH}")
+    set(GIT_VERSION "${PROJECT_VERSION_STR}-${GIT_BRANCH}-${GIT_HASH}")
 endif()
 
 message(STATUS "Build version: ${GIT_VERSION}")
