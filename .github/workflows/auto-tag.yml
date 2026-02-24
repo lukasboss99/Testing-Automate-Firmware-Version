@@ -3,8 +3,7 @@ name: Auto Tag from VERSION file
 on:
   push:
     branches:
-      - main
-      - master
+      - development
 
 permissions:
   contents: write

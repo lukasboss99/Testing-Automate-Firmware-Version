@@ -3,8 +3,8 @@
 # Pre-Commit Hook: Auto-Increment Patch Version
 # =============================================================================
 # This hook automatically increments the patch number in the VERSION file
-# on every commit. The VERSION file is the single source of truth for the
-# project version.
+# only for commits on the development branch. The VERSION file is the single
+# source of truth for the project version.
 #
 # Setup (run once per clone):
 #   git config core.hooksPath .githooks
@@ -15,6 +15,12 @@
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 VERSION_FILE="$REPO_ROOT/VERSION"
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+# Only bump version on development branch commits
+if [ "$CURRENT_BRANCH" != "development" ]; then
+    exit 0
+fi
 
 # Create VERSION file if it doesn't exist
 if [ ! -f "$VERSION_FILE" ]; then
