@@ -38,6 +38,10 @@ EOF
     return 1
 }
 
+is_valid_semver() {
+    echo "$1" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
+}
+
 # Create VERSION file if it doesn't exist
 if [ ! -f "$VERSION_FILE" ]; then
     echo "0.0.1" > "$VERSION_FILE"
@@ -75,9 +79,18 @@ for part in "$MAJOR" "$MINOR" "$PATCH"; do
     esac
 done
 
-# Resolve highest baseline version between VERSION file and existing semver tags
-LATEST_TAG=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+# Resolve highest baseline version between:
+# 1) current VERSION file,
+# 2) previous branch VERSION (HEAD:VERSION),
+# 3) existing semver tags.
 BASE_VERSION="$VERSION"
+
+PREV_BRANCH_VERSION=$(git show HEAD:VERSION 2>/dev/null | tr -d '[:space:]')
+if [ -n "$PREV_BRANCH_VERSION" ] && is_valid_semver "$PREV_BRANCH_VERSION" && version_gt "$PREV_BRANCH_VERSION" "$BASE_VERSION"; then
+    BASE_VERSION="$PREV_BRANCH_VERSION"
+fi
+
+LATEST_TAG=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
 if [ -n "$LATEST_TAG" ] && version_gt "$LATEST_TAG" "$BASE_VERSION"; then
     BASE_VERSION="$LATEST_TAG"
 fi

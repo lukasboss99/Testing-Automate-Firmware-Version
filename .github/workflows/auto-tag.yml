@@ -44,6 +44,15 @@ jobs:
             echo "Using higher existing version: $WINNING_VERSION (latest tag)"
           fi
 
+      - name: Fail on downgraded VERSION
+        if: steps.version.outputs.version != steps.version.outputs.file_version
+        run: |
+          echo "VERSION in branch is lower than existing highest version."
+          echo "VERSION file: ${{ steps.version.outputs.file_version }}"
+          echo "Highest version: ${{ steps.version.outputs.version }}"
+          echo "Please fix VERSION manually and push again."
+          exit 1
+
       - name: Check if tag already exists
         id: check
         run: |
