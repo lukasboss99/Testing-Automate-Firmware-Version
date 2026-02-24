@@ -3,8 +3,8 @@
 # Pre-Commit Hook: Auto-Increment Patch Version
 # =============================================================================
 # This hook automatically increments the patch number in the VERSION file
-# only for commits on the development branch. The VERSION file is the single
-# source of truth for the project version.
+# on every commit. The VERSION file is the single source of truth for the
+# project version.
 #
 # Setup (run once per clone):
 #   git config core.hooksPath .githooks
@@ -15,32 +15,6 @@
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 VERSION_FILE="$REPO_ROOT/VERSION"
-CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-
-# Only bump version on development branch commits
-if [ "$CURRENT_BRANCH" != "development" ]; then
-    exit 0
-fi
-
-version_gt() {
-    IFS='.' read -r a_major a_minor a_patch <<EOF
-$1
-EOF
-    IFS='.' read -r b_major b_minor b_patch <<EOF
-$2
-EOF
-
-    if [ "$a_major" -gt "$b_major" ]; then return 0; fi
-    if [ "$a_major" -lt "$b_major" ]; then return 1; fi
-    if [ "$a_minor" -gt "$b_minor" ]; then return 0; fi
-    if [ "$a_minor" -lt "$b_minor" ]; then return 1; fi
-    if [ "$a_patch" -gt "$b_patch" ]; then return 0; fi
-    return 1
-}
-
-is_valid_semver() {
-    echo "$1" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
-}
 
 # Create VERSION file if it doesn't exist
 if [ ! -f "$VERSION_FILE" ]; then
@@ -49,7 +23,7 @@ if [ ! -f "$VERSION_FILE" ]; then
 fi
 
 # Check if there are actual staged changes (excluding VERSION itself)
-STAGED_CHANGES=$(git diff --cached --name-only)
+STAGED_CHANGES=$(git diff --cached --name-only | grep -v "^VERSION$")
 if [ -z "$STAGED_CHANGES" ]; then
     # Only VERSION is staged or nothing is staged — don't increment
     exit 0
@@ -79,26 +53,6 @@ for part in "$MAJOR" "$MINOR" "$PATCH"; do
     esac
 done
 
-# Resolve highest baseline version between:
-# 1) current VERSION file,
-# 2) previous branch VERSION (HEAD:VERSION),
-# 3) existing semver tags.
-BASE_VERSION="$VERSION"
-
-PREV_BRANCH_VERSION=$(git show HEAD:VERSION 2>/dev/null | tr -d '[:space:]')
-if [ -n "$PREV_BRANCH_VERSION" ] && is_valid_semver "$PREV_BRANCH_VERSION" && version_gt "$PREV_BRANCH_VERSION" "$BASE_VERSION"; then
-    BASE_VERSION="$PREV_BRANCH_VERSION"
-fi
-
-LATEST_TAG=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
-if [ -n "$LATEST_TAG" ] && version_gt "$LATEST_TAG" "$BASE_VERSION"; then
-    BASE_VERSION="$LATEST_TAG"
-fi
-
-IFS='.' read -r MAJOR MINOR PATCH EXTRA <<EOF
-$BASE_VERSION
-EOF
-
 # Increment patch version
 PATCH=$((PATCH + 1))
 NEW_VERSION="$MAJOR.$MINOR.$PATCH"
@@ -109,4 +63,4 @@ echo "$NEW_VERSION" > "$VERSION_FILE"
 # Stage the updated VERSION file
 git add "$VERSION_FILE"
 
-echo "[version-hook] Version: $BASE_VERSION -> $NEW_VERSION (file had $VERSION)"
+echo "[version-hook] Version: $VERSION -> $NEW_VERSION"
